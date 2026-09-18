@@ -1,0 +1,1460 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriStack Farmer ID Card Generator - Rupshi Kalgachia Block</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Devanagari:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans Devanagari', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .id-card {
+            width: 530px;
+            height: 334px;
+            border-radius: 4px;
+            position: relative;
+            box-sizing: border-box;
+            background: #ffffff;
+            overflow: hidden;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+            user-select: none;
+            transition: all 0.3s ease;
+            border: 1px solid #111827;
+        }
+
+        /* Larger preview typography for easier manual cropping */
+        .id-card .card-big-text { font-size: 15px !important; line-height: 1.18 !important; }
+        .id-card .card-big-label { font-size: 13px !important; }
+        .id-card .card-big-id { font-size: 19px !important; }
+
+        /* Back-side text: bold for easier reading/printing */
+        #card-back-container .text-slate-900,
+        #card-back-container .text-slate-800,
+        #card-back-container .text-slate-700,
+        #card-back-container .text-slate-600,
+        #card-back-container table,
+        #card-back-container td,
+        #card-back-container th {
+            font-weight: 700 !important;
+        }
+        .card-bg-pattern {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            opacity: 0.03;
+            pointer-events: none;
+        }
+
+        /* --- DESIGN THEMES --- */
+        /* 1. Classic Emerald */
+        .theme-emerald .theme-top-bar { background: linear-gradient(to right, #065f46, #16a34a, #065f46); }
+        .theme-emerald .theme-text-header { color: #065f46; }
+        .theme-emerald .theme-photo-border { border-color: #047857; }
+        .theme-emerald .theme-id-strip { background-color: #f0fdf4; color: #065f46; }
+        .theme-emerald .theme-bottom-ribbon { background: linear-gradient(to right, #065f46, #15803d); color: white; }
+        .theme-emerald .card-bg-pattern { background-image: radial-gradient(#16a34a 0.5px, transparent 0.5px), radial-gradient(#16a34a 0.5px, #ffffff 0.5px); background-size: 20px 20px; }
+
+        /* 2. Premium Gold */
+        .theme-gold .theme-top-bar { background: linear-gradient(to right, #854d0e, #eab308, #854d0e); }
+        .theme-gold .theme-text-header { color: #854d0e; }
+        .theme-gold .theme-photo-border { border-color: #a16207; }
+        .theme-gold .theme-id-strip { background-color: #fefce8; color: #854d0e; }
+        .theme-gold .theme-bottom-ribbon { background: linear-gradient(to right, #854d0e, #a16207); color: white; }
+        .theme-gold .card-bg-pattern { background-image: radial-gradient(#eab308 0.5px, transparent 0.5px); background-size: 15px 15px; opacity: 0.04; }
+
+        /* 3. Corporate Blue */
+        .theme-blue .theme-top-bar { background: linear-gradient(to right, #1e3a8a, #3b82f6, #1e3a8a); }
+        .theme-blue .theme-text-header { color: #1e3a8a; }
+        .theme-blue .theme-photo-border { border-color: #1d4ed8; }
+        .theme-blue .theme-id-strip { background-color: #eff6ff; color: #1e3a8a; }
+        .theme-blue .theme-bottom-ribbon { background: linear-gradient(to right, #1e3a8a, #1d4ed8); color: white; }
+        .theme-blue .card-bg-pattern { background-image: linear-gradient(#3b82f6 0.5px, transparent 0.5px), linear-gradient(90deg, #3b82f6 0.5px, transparent 0.5px); background-size: 15px 15px; opacity: 0.02; }
+
+        /* 4. Agri Earth (Orange/Brown) */
+        .theme-earth .theme-top-bar { background: linear-gradient(to right, #7c2d12, #ea580c, #7c2d12); }
+        .theme-earth .theme-text-header { color: #7c2d12; }
+        .theme-earth .theme-photo-border { border-color: #c2410c; }
+        .theme-earth .theme-id-strip { background-color: #fff7ed; color: #7c2d12; }
+        .theme-earth .theme-bottom-ribbon { background: linear-gradient(to right, #7c2d12, #c2410c); color: white; }
+        .theme-earth .card-bg-pattern { background-image: radial-gradient(#ea580c 0.5px, transparent 0.5px); background-size: 10px 10px; opacity: 0.03; }
+
+        /* 5. Midnight Dark */
+        .theme-dark .theme-top-bar { background: linear-gradient(to right, #0f172a, #475569, #0f172a); }
+        .theme-dark .theme-text-header { color: #0f172a; }
+        .theme-dark .theme-photo-border { border-color: #334155; }
+        .theme-dark .theme-id-strip { background-color: #f1f5f9; color: #0f172a; }
+        .theme-dark .theme-bottom-ribbon { background: linear-gradient(to right, #0f172a, #1e293b); color: white; }
+        .theme-dark .card-bg-pattern { background-image: linear-gradient(45deg, #475569 0.25px, transparent 0.25px); background-size: 10px 10px; opacity: 0.05; }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+        /* JPEG export buttons */
+        @media (max-width: 1500px) {
+            header .flex.items-center.gap-3 { flex-wrap: wrap; justify-content: center; }
+        }
+
+        /* Print Mode Styling */
+        @media print {
+            body * { visibility: hidden; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                display: flex !important;
+                flex-direction: column !important;
+                align-items: center !important;
+                gap: 25px;
+                padding-top: 20px;
+            }
+            .no-print { display: none !important; }
+            .id-card { box-shadow: none !important; border: 1px solid #111827 !important; page-break-inside: avoid; }
+        }
+    </style>
+</head>
+<body class="min-h-screen pb-12 text-slate-800">
+
+    <header class="bg-gradient-to-r from-emerald-900 via-emerald-800 to-green-700 text-white shadow-lg py-4 px-6 mb-8 no-print">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="bg-white p-1.5 rounded-xl shadow-md flex items-center">
+                    <img src="logo.png" alt="AgriStack Logo" class="h-9 object-contain" onerror="this.src='https://placehold.co/120x40/065f46/ffffff?text=AgriStack'">
+                </div>
+                <div>
+                    <div class="flex items-center gap-2">
+                        <h1 class="text-xl font-bold tracking-wide">Farmer ID Card Generator</h1>
+                        <span class="bg-emerald-600 text-emerald-100 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider border border-emerald-400">Rupshi Kalgachia</span>
+                    </div>
+                    <p class="text-xs text-emerald-200">District: Barpeta, Assam • Rupshi Dev Block & Kalgachia Revenue Circle</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <button onclick="saveCompletedWork()" class="bg-blue-600 hover:bg-blue-700 text-white font-semibold text-sm py-2 px-4 rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer" title="इस ग्राहक का काम हिस्ट्री में सेव करें">
+                    <i class="fa-solid fa-floppy-disk"></i> काम सेव करें
+                </button>
+                <button onclick="openHistoryModal()" class="bg-white/10 hover:bg-white/20 text-white font-semibold text-sm py-2 px-3.5 rounded-xl border border-white/20 transition flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-clock-rotate-left"></i> हिस्ट्री
+                </button>
+                <button onclick="saveCardJPEG('front')" class="bg-purple-600 hover:bg-purple-700 text-white font-semibold text-sm py-2 px-4 rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer" title="Front card को JPEG में सेव करें">
+                    <i class="fa-solid fa-image"></i> Front JPEG
+                </button>
+                <button onclick="saveCardJPEG('back')" class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm py-2 px-4 rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer" title="Back card को JPEG में सेव करें">
+                    <i class="fa-solid fa-image"></i> Back JPEG
+                </button>
+                <button onclick="saveBothCardsJPEG()" class="bg-fuchsia-600 hover:bg-fuchsia-700 text-white font-semibold text-sm py-2 px-4 rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer" title="Front और Back दोनों JPEG में सेव करें">
+                    <i class="fa-solid fa-images"></i> Both JPEG
+                </button>
+                <button onclick="window.print()" class="bg-amber-500 hover:bg-amber-600 text-white font-semibold text-sm py-2 px-4 rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-print"></i> प्रिंट / Print Card
+                </button>
+                <button onclick="resetForm()" class="bg-white/10 hover:bg-white/20 text-white font-medium text-sm py-2 px-3.5 rounded-xl transition cursor-pointer">
+                    <i class="fa-solid fa-rotate-left"></i> रीसेट
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+            
+            <!-- LEFT COLUMN: FORM CONTROLS -->
+            <section class="lg:col-span-5 bg-white rounded-2xl p-6 shadow-sm border border-slate-200/80 no-print space-y-6">
+                
+                <!-- Theme Selector -->
+                <div class="p-4 bg-emerald-50/70 rounded-xl border border-emerald-200/60 shadow-xs">
+                    <label class="block text-xs font-bold text-emerald-900 uppercase tracking-wider mb-2 flex items-center justify-between">
+                        <span><i class="fa-solid fa-palette text-emerald-700 mr-1.5"></i> कार्ड थीम (Template Theme)</span>
+                        <span class="text-[10px] bg-emerald-200 text-emerald-800 px-2 py-0.5 rounded-md">5 Styles</span>
+                    </label>
+                    <select id="input-theme" onchange="changeTheme()" class="w-full px-3 py-2 bg-white border border-emerald-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-sm font-medium text-slate-800 shadow-xs">
+                        <option value="theme-emerald">Theme 1 : Classic Emerald (आधिकारिक हरा)</option>
+                        <option value="theme-gold">Theme 2 : Royal Gold (प्रीमियम गोल्ड)</option>
+                        <option value="theme-blue">Theme 3 : Corporate Blue (नेवी ब्लू)</option>
+                        <option value="theme-earth">Theme 4 : Agri Earth (ऑरेंज / मटमैला)</option>
+                        <option value="theme-dark">Theme 5 : Midnight Dark (डार्क स्टाइल)</option>
+                    </select>
+                </div>
+
+                <div class="p-4 bg-amber-50/80 rounded-xl border border-amber-200/80 shadow-xs">
+                    <label class="block text-xs font-bold text-amber-900 uppercase tracking-wider mb-1.5 flex items-center justify-between">
+                        <span><i class="fa-solid fa-qrcode text-amber-700 mr-1.5"></i> QR कोड डेटा फॉर्मेट (QR Payload Format)</span>
+                        <button onclick="openQrModal()" class="text-[10px] bg-amber-200 hover:bg-amber-300 text-amber-900 px-2 py-0.5 rounded font-bold transition cursor-pointer">
+                            <i class="fa-solid fa-eye mr-0.5"></i> QR डाटा देखें
+                        </button>
+                    </label>
+                    <select id="input-qr-mode" onchange="updateCard()" class="w-full px-3 py-2 bg-white border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 text-xs font-medium text-slate-800 shadow-xs">
+                        <option value="simple" selected>1. Simple Text (Name, Farmer ID, DOB / नाम, आईडी, जन्मतिथि)</option>
+                        <option value="json">2. Full AgriStack Digital JSON (नाम, ID, DOB, आधार, ज़मीन डेटा)</option>
+                        <option value="url">3. AgriStack Direct Verification Portal Link</option>
+                        <option value="vcard">4. Farmer VCard / Contact Info</option>
+                        <option value="plain">5. Plain Farmer ID Number</option>
+                    </select>
+                </div>
+
+                <!-- Section Header: Personal Details -->
+                <div class="border-b border-slate-100 pb-2">
+                    <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+                        <i class="fa-solid fa-user-gear text-emerald-600"></i> 1. किसान की जानकारी (Farmer Details)
+                    </h2>
+                </div>
+                
+                <div class="space-y-4">
+                    <!-- Photo Upload -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">किसान की फोटो (Photo)</label>
+                        <div class="flex items-center gap-4">
+                            <div class="w-16 h-16 rounded-xl bg-slate-100 border border-slate-200 overflow-hidden flex items-center justify-center relative shadow-inner">
+                                <img id="form-photo-preview" src="https://images.unsplash.com/photo-1566947168307-2ee316fa3ff7?q=80&w=200&auto=format&fit=crop" class="w-full h-full object-cover" alt="Farmer">
+                            </div>
+                            <input type="file" id="photo-input" accept="image/*" class="hidden" onchange="handlePhotoUpload(event)">
+                            <button onclick="document.getElementById('photo-input').click()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold py-2 px-3.5 rounded-lg transition border border-slate-300 flex items-center gap-1.5 cursor-pointer">
+                                <i class="fa-solid fa-camera text-slate-500"></i> नई फोटो अपलोड करें
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Personal Info Grid -->
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">पूरा नाम (Full Name)</label>
+                            <input type="text" id="input-name" value="Shahjahan Ali" oninput="updateCard()" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-medium focus:ring-1 focus:ring-emerald-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">लिंग (Gender)</label>
+                            <select id="input-gender" onchange="updateCard()" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-medium focus:ring-1 focus:ring-emerald-500">
+                                <option value="Male" selected>Male / पुरुष</option>
+                                <option value="Female">Female / महिला</option>
+                                <option value="Other">Other / अन्य</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">जन्म तिथि (DOB)</label>
+                            <input type="text" id="input-dob" value="15/08/1975" oninput="updateCard()" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">जाति (Caste)</label>
+                            <input type="text" id="input-caste" value="General" oninput="updateCard()" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-medium">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">क्षेत्र (Area)</label>
+                            <input type="text" id="input-area" value="Rural" oninput="updateCard()" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-medium">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">आधार नंबर (Aadhaar No)</label>
+                            <input type="text" id="input-aadhaar" value="950008005840" maxlength="12" oninput="updateCard()" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-medium">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">फार्मर आईडी (Farmer ID)</label>
+                            <input type="text" id="input-farmer-id" value="0000 0000 000" oninput="updateCard()" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-bold tracking-wider text-emerald-800">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">रजिस्ट्री का नाम (Registry)</label>
+                            <input type="text" id="input-registry" value="Assam Farmer Registry" oninput="updateCard()" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-sm font-medium">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Rupshi & Kalgachia Block Village Database -->
+                <div class="border-t border-slate-200 pt-5 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <i class="fa-solid fa-tree-city text-emerald-600"></i> 2. रूपसी/कलगाछिया ब्लॉक गाँव व जी.पी. डेटाबेस
+                        </h3>
+                        <span class="text-[10px] font-bold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">100 Villages / 14 GPs</span>
+                    </div>
+
+                    <!-- Village Quick Select Dropdown -->
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                        <label class="block text-[11px] font-bold text-slate-600 uppercase tracking-wider mb-1.5">
+                            <i class="fa-solid fa-magnifying-glass text-slate-400 mr-1"></i> रूपसी/कलगाछिया का गाँव चुनें (Quick Select Village)
+                        </label>
+                        <select id="village-select" onchange="onVillageSelectChange()" class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm font-medium bg-white text-slate-800 focus:ring-2 focus:ring-emerald-500">
+                            <option value="">-- चुनें ( Select Village from List ) --</option>
+                        </select>
+                        <p class="text-[10px] text-slate-500 mt-1.5 italic"><i class="fa-solid fa-circle-info mr-1"></i> गाँव चुनने पर पता व बैक साइड भूमि रिकॉर्ड स्वतः भर जाएंगे।</p>
+                    </div>
+
+                    <!-- Manual Address Textarea -->
+                    <div>
+                        <label class="block text-[11px] font-semibold text-slate-500 uppercase tracking-wider mb-1">कार्ड का पिछला पता (Back Side Full Address)</label>
+                        <textarea id="input-address" rows="2" oninput="updateCard()" class="w-full px-3 py-1.5 border border-slate-300 rounded-lg text-xs font-medium leading-snug">C/o A.Samad, APRUPI, Uprupi, Kalgachia, Barpeta, Assam, 781321</textarea>
+                    </div>
+                </div>
+
+                <!-- Section 3: Back Side Land Plots & Village Table Manager -->
+                <div class="border-t border-slate-200 pt-5 space-y-4">
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-800 flex items-center gap-1.5">
+                                <i class="fa-solid fa-table-list text-emerald-600"></i> 3. पिछले हिस्से की ज़मीन / गाँव सूचि
+                            </h3>
+                            <p class="text-[10px] text-slate-500">Back Side Multi-Village & Khasra Records</p>
+                        </div>
+                        <button onclick="addLandRecordRow()" class="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold py-1.5 px-3 rounded-lg shadow-xs transition flex items-center gap-1 cursor-pointer">
+                            <i class="fa-solid fa-plus text-[10px]"></i> नया गाँव/खाता जोड़ें
+                        </button>
+                    </div>
+
+                    <!-- Land Plot Form Table Input -->
+                    <div id="land-records-inputs-container" class="space-y-2 max-h-56 overflow-y-auto pr-1">
+                        <!-- Dynamic Rows injected via JS -->
+                    </div>
+                </div>
+
+                <!-- Section 4: Footer Info -->
+                <div class="border-t border-slate-200 pt-4 grid grid-cols-2 gap-3">                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">मोबाइल नंबर (Mobile No.)</label>
+                        <input type="text" id="input-mobile" value="" maxlength="10" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'').slice(0,10); updateCard()" placeholder="10 digit mobile number" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-medium">
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">हेल्पलाइन (Helpline)</label>
+                        <input type="text" id="input-helpline" value="1800-180-1551" oninput="updateCard()" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-medium">
+                    </div>
+                    <div>
+                        <label class="block text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-1">वेबसाइट URL</label>
+                        <input type="text" id="input-website" value="www.asfr.agristack.gov.in" oninput="updateCard()" class="w-full px-2.5 py-1.5 border border-slate-300 rounded-lg text-xs font-medium">
+                    </div>
+                </div>
+
+            </section>
+
+            <!-- RIGHT COLUMN: LIVE ID CARD PREVIEW -->
+            <section class="lg:col-span-7 flex flex-col items-center gap-8 bg-slate-100 rounded-2xl p-6 border border-slate-200 shadow-inner">
+                
+                <div class="w-full flex justify-between items-center border-b border-slate-200 pb-3 no-print">
+                    <span class="text-xs font-bold text-slate-600 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-id-card text-emerald-600 text-base"></i> लाइव कार्ड प्रीव्यू (Front & Back Preview)
+                    </span>
+                    <span class="text-[11px] text-emerald-800 bg-emerald-100/80 px-3 py-1 rounded-full font-bold border border-emerald-200 shadow-2xs">
+                        <i class="fa-solid fa-circle-dot text-emerald-600 animate-pulse mr-1"></i> Rupshi Kalgachia Verified
+                    </span>
+                </div>
+
+                <!-- Printable Card Canvas Container -->
+                <div id="print-area" class="flex flex-col gap-8 items-center justify-center w-full my-auto py-2">
+                    
+                    <!-- ================= CARD FRONT ================= -->
+                    <div id="card-front-container" class="id-card relative shadow-md theme-emerald">
+                        <div class="card-bg-pattern"></div>
+                        <div class="h-1 theme-top-bar"></div>
+
+                        <!-- Header -->
+                        <div class="px-5 pt-3 pb-2 flex justify-between items-center border-b border-amber-200/80 relative">
+                            <div class="flex items-center w-[120px]">
+                                <img src="logo.png" alt="AgriStack" class="h-7 object-contain" onerror="this.src='https://placehold.co/100x30/065f46/ffffff?text=AgriStack'">
+                            </div>
+                            <div class="absolute inset-x-0 text-center pointer-events-none">
+                                <h3 class="theme-text-header font-extrabold text-[15px] tracking-wide uppercase">Government of India</h3>
+                            </div>
+                            <div class="w-[120px] flex justify-end">
+                                <img src="images.png" alt="Emblem" class="h-8 object-contain" onerror="this.src='https://placehold.co/30x35/065f46/ffffff?text=GOI'">
+                            </div>
+                        </div>
+
+                        <!-- Main Content Area -->
+                        <div class="px-5 pt-2.5 flex gap-2.5 items-start">
+                            <!-- Photo -->
+                            <div class="flex flex-col items-center">
+                                <div class="w-[100px] h-[122px] border-[2px] theme-photo-border rounded-lg bg-neutral-100 overflow-hidden shadow-xs">
+                                    <img id="card-photo" src="https://images.unsplash.com/photo-1566947168307-2ee316fa3ff7?q=80&w=200&auto=format&fit=crop" class="w-full h-full object-cover" alt="Farmer">
+                                </div>
+                            </div>
+
+                            <!-- Key Details Grid -->
+                            <div class="flex-1 grid grid-cols-12 gap-y-1 text-[15px] text-slate-800 pt-0.5 card-big-text">
+                                <div class="col-span-4 font-bold text-slate-900 card-big-label">Name</div>
+                                <div class="col-span-8 font-semibold truncate card-big-text">: <span id="card-name" class="ml-0.5">Shahjahan Ali</span></div>
+
+                                <div class="col-span-4 font-bold text-slate-900 card-big-label">Gender</div>
+                                <div class="col-span-8 font-medium card-big-text">: <span id="card-gender" class="ml-0.5">Male</span></div>
+
+                                <div class="col-span-4 font-bold text-slate-900 card-big-label">DOB</div>
+                                <div class="col-span-8 font-medium card-big-text">: <span id="card-dob" class="ml-0.5">15/08/1975</span></div>
+
+                                <div class="col-span-4 font-bold text-slate-900 card-big-label">Caste</div>
+                                <div class="col-span-8 font-medium card-big-text">: <span id="card-caste" class="ml-0.5">General</span></div>
+
+                                <div class="col-span-4 font-bold text-slate-900 card-big-label">Area</div>
+                                <div class="col-span-8 font-medium card-big-text">: <span id="card-area" class="ml-0.5">Rural</span></div>
+
+                                <div class="col-span-4 font-bold text-slate-900 card-big-label">Aadhaar</div>
+                                <div class="col-span-8 font-semibold text-slate-900 card-big-text">: <span id="card-aadhaar" class="ml-0.5">9500 0800 5840</span></div>
+                            </div>
+
+                            <!-- QR Code -->
+                            <div class="flex flex-col items-center justify-start pt-0.5">
+                                <div onclick="openQrModal()" class="p-1.5 border-2 border-slate-300 rounded-lg bg-white shadow-sm hover:border-emerald-500 hover:shadow-md transition cursor-pointer group relative" title="Click to view full QR details">
+                                    <img id="card-qrcode" src="https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=FarmerID:49718732118" class="w-[88px] h-[88px] object-contain" alt="AgriStack QR Code">
+                                    <div class="absolute inset-0 bg-emerald-900/10 opacity-0 group-hover:opacity-100 transition rounded flex items-center justify-center">
+                                        <i class="fa-solid fa-magnifying-glass-plus text-emerald-800 text-sm bg-white/90 p-1.5 rounded-full shadow-xs"></i>
+                                    </div>
+                                </div>
+                                <span class="text-[9px] font-extrabold text-slate-600 uppercase tracking-tight mt-1">Scan to Verify</span>
+                            </div>
+                        </div>
+
+                        <!-- Front Footer Strips -->
+                        <div class="absolute bottom-0 left-0 right-0">
+                            <div class="text-center py-1 theme-id-strip border-t border-b border-slate-200">
+                                <span class="font-extrabold text-[19px] tracking-widest card-big-id">Farmer ID : <span id="card-farmer-id">0000 0000 000</span></span>
+                            </div>
+                            <div class="theme-bottom-ribbon text-center py-1.5 font-bold text-[14px] tracking-wider uppercase">
+                                <span id="card-registry">Assam Farmer Registry</span>
+                            </div>
+                        </div>
+                    </div>
+
+
+                    <!-- ================= CARD BACK ================= -->
+                    <div id="card-back-container" class="id-card relative shadow-md theme-emerald">
+                        <div class="card-bg-pattern"></div>
+                        <div class="h-1 theme-top-bar"></div>
+
+                        <!-- Back Header -->
+                        <div class="px-5 pt-3 pb-2 flex justify-between items-center border-b border-amber-200/80 relative">
+                            <div class="flex items-center w-[120px]">
+                                <img src="logo.png" alt="AgriStack" class="h-7 object-contain" onerror="this.src='https://placehold.co/100x30/065f46/ffffff?text=AgriStack'">
+                            </div>
+                            <div class="absolute inset-x-0 text-center pointer-events-none">
+                                <h3 class="theme-text-header font-extrabold text-[15px] tracking-wide uppercase">Government of India</h3>
+                            </div>
+                            <div class="w-[120px] flex justify-end">
+                                <img src="images.png" alt="Emblem" class="h-8 object-contain" onerror="this.src='https://placehold.co/30x35/065f46/ffffff?text=GOI'">
+                            </div>
+                        </div>
+
+                        <!-- Back Content Area -->
+                        <div class="px-5 pt-2.5">
+                            <!-- Address Block -->
+                            <div class="mb-2">
+                                <h4 class="text-slate-900 font-extrabold text-[15px]">Address / पता</h4>
+                                <p id="card-address" class="text-slate-900 text-[14px] leading-snug font-bold min-h-[56px] border-l-2 border-emerald-500 pl-2 mt-0.5">
+                                    C/o A.Samad, APRUPI, Uprupi, Kalgachia, Barpeta, Assam, 781321
+                                </p>
+                                <div class="mt-1.5 flex items-center gap-2 text-[13px] font-extrabold text-slate-900">
+                                    <i class="fa-solid fa-phone theme-text-header"></i>
+                                    <span>Mobile No.:</span>
+                                    <span id="card-mobile">—</span>
+                                </div>
+                            </div>
+
+                            <!-- Villages / Land Holdings Table -->
+                            <div class="mt-2">
+                                <div class="flex justify-between items-center mb-1">
+                                    <span class="text-[10px] font-extrabold text-slate-800 uppercase tracking-wider">Land & Village Details (गाँव व भूमि विवरण)</span>
+                                </div>
+                                <div class="max-h-[105px] overflow-hidden border border-slate-300 rounded-md bg-white">
+                                    <table class="w-full text-center text-xs border-collapse">
+                                        <thead>
+                                            <tr class="bg-slate-100 text-slate-800 font-bold border-b border-slate-300">
+                                                <th class="py-1 px-1 text-[10px] uppercase border-r border-slate-200">Village (गाँव)</th>
+                                                <th class="py-1 px-1 text-[10px] uppercase border-r border-slate-200">Khasra / Dag</th>
+                                                <th class="py-1 px-1 text-[10px] uppercase">Area (Hectare)</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="card-land-table-body">
+                                            <!-- Dynamic Rows render here -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Back Footer Strip -->
+                        <div class="absolute bottom-0 left-0 right-0">
+                            <div class="h-0.5 bg-gradient-to-r from-amber-400 via-orange-500 to-emerald-500"></div>
+                            <div class="bg-slate-100 text-slate-700 flex justify-between items-center px-5 py-1.5 border-t border-slate-200">
+                                <div class="flex items-center gap-1 text-[11px] font-bold text-slate-800">
+                                    <i class="fa-solid fa-phone-volume theme-text-header mr-0.5"></i>
+                                    <span id="card-helpline">1800-180-1551</span>
+                                </div>
+                                <div class="flex items-center gap-1 text-[11px] font-bold text-slate-800">
+                                    <i class="fa-solid fa-globe theme-text-header mr-0.5"></i>
+                                    <span id="card-website">www.asfr.agristack.gov.in</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <div id="qr-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden no-print">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 relative animate-in fade-in zoom-in-95 duration-150">
+            <button onclick="closeQrModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-full w-8 h-8 flex items-center justify-center transition cursor-pointer">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+            <div class="flex items-center gap-3 border-b border-slate-200 pb-3 mb-4">
+                <div class="p-2 bg-emerald-100 text-emerald-700 rounded-xl">
+                    <i class="fa-solid fa-qrcode text-xl"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">QR Code Encoded Data Inspector</h3>
+                    <p class="text-xs text-slate-500">QR कोड में सेव किया गया संपूर्ण आधिकारिक डेटा</p>
+                </div>
+            </div>
+            
+            <div class="flex flex-col sm:flex-row gap-4 items-center bg-slate-50 p-4 rounded-xl border border-slate-200 mb-4">
+                <div class="bg-white p-2 border border-slate-300 rounded-lg shadow-xs flex-shrink-0">
+                    <img id="modal-qr-img" class="w-28 h-28 object-contain" src="" alt="QR Large">
+                </div>
+                <div class="space-y-1.5 text-xs text-slate-700 flex-1">
+                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                        <span class="font-bold text-slate-500">Encoded Status:</span>
+                        <span class="font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-[10px]">Verified Primary Fields</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                        <span class="font-bold text-slate-500">Farmer Name:</span>
+                        <span id="modal-qr-name" class="font-semibold text-slate-800">Shahjahan Ali</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                        <span class="font-bold text-slate-500">Farmer ID:</span>
+                        <span id="modal-qr-farmerid" class="font-bold text-slate-800">0000 0000 000</span>
+                    </div>
+                    <div class="flex justify-between border-b border-slate-200 pb-1">
+                        <span class="font-bold text-slate-500">Date of Birth (DOB):</span>
+                        <span id="modal-qr-dob" class="font-semibold text-slate-800">15/08/1975</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="font-bold text-slate-500">District / State:</span>
+                        <span id="modal-qr-district" class="font-bold text-emerald-800">Barpeta, Assam</span>
+                    </div>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5 flex justify-between items-center">
+                    <span>Raw QR Code Payload Output</span>
+                    <button onclick="copyQrPayload()" class="text-[11px] text-emerald-700 hover:text-emerald-800 font-bold flex items-center gap-1 cursor-pointer">
+                        <i class="fa-solid fa-copy"></i> Copy Data
+                    </button>
+                </label>
+                <textarea id="modal-qr-payload" readonly rows="6" class="w-full p-3 bg-slate-900 text-emerald-400 font-mono text-[11px] rounded-xl leading-relaxed select-all border border-slate-800 shadow-inner"></textarea>
+            </div>
+
+            <div class="mt-5 flex justify-end">
+                <button onclick="closeQrModal()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs py-2 px-5 rounded-xl shadow-xs transition cursor-pointer">
+                    ठीक है (Close)
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- ================= OFFLINE WORK HISTORY ================= -->
+    <div id="history-modal" class="fixed inset-0 bg-slate-900/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 hidden no-print">
+        <div class="bg-white rounded-2xl max-w-5xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-slate-200">
+            <div class="bg-gradient-to-r from-emerald-900 to-green-700 text-white px-5 py-4 flex justify-between items-center">
+                <div>
+                    <h3 class="text-lg font-bold"><i class="fa-solid fa-clock-rotate-left mr-2"></i>काम की हिस्ट्री</h3>
+                    <p class="text-xs text-emerald-100">यह रिकॉर्ड इसी कंप्यूटर/ब्राउज़र में OFFLINE सेव रहता है। इंटरनेट की जरूरत नहीं।</p>
+                </div>
+                <button onclick="closeHistoryModal()" class="bg-white/10 hover:bg-white/20 rounded-full w-9 h-9">✕</button>
+            </div>
+            <div class="p-4 flex flex-wrap gap-2 items-center border-b bg-slate-50">
+                <input id="history-search" oninput="renderHistory()" type="text" placeholder="नाम / Farmer ID / गाँव खोजें..." class="flex-1 min-w-[240px] px-3 py-2 border rounded-lg text-sm">
+                <button onclick="exportHistoryCSV()" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-semibold"><i class="fa-solid fa-file-csv mr-1"></i> CSV Export</button>
+                <button onclick="clearHistory()" class="bg-rose-600 hover:bg-rose-700 text-white px-3 py-2 rounded-lg text-sm font-semibold"><i class="fa-solid fa-trash mr-1"></i> सभी Delete</button>
+            </div>
+            <div id="history-list" class="p-4 overflow-y-auto max-h-[62vh]"></div>
+        </div>
+    </div>
+
+    <script>
+        // ================= OFFLINE STORAGE =================
+        const HISTORY_KEY = 'agristack_farmer_work_history_v1';
+        const DRAFT_KEY = 'agristack_farmer_current_draft_v1';
+        let currentPhotoData = '';
+
+        function getHistory() {
+            try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+            catch(e) { return []; }
+        }
+
+        function saveDraftOffline() {
+            try {
+                const draft = collectCurrentData();
+                draft.photo = currentPhotoData || document.getElementById('card-photo').src || '';
+                localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+            } catch(e) {
+                console.warn('Offline draft save failed:', e);
+            }
+        }
+
+        function collectCurrentData() {
+            return {
+                name: document.getElementById('input-name').value.trim(),
+                gender: document.getElementById('input-gender').value,
+                dob: document.getElementById('input-dob').value.trim(),
+                caste: document.getElementById('input-caste').value.trim(),
+                area: document.getElementById('input-area').value.trim(),
+                aadhaar: document.getElementById('input-aadhaar').value.trim(),
+                farmerId: document.getElementById('input-farmer-id').value.trim(),
+                registry: document.getElementById('input-registry').value.trim(),
+                village: document.getElementById('village-select').value,
+                address: document.getElementById('input-address').value.trim(),
+                helpline: document.getElementById('input-helpline').value.trim(),
+                website: document.getElementById('input-website').value.trim(),
+                landRecords: JSON.parse(JSON.stringify(landRecords)),
+                theme: document.getElementById('input-theme').value
+            };
+        }
+
+        function restoreDraftOffline() {
+            try {
+                const raw = localStorage.getItem(DRAFT_KEY);
+                if (!raw) return;
+                const d = JSON.parse(raw);
+                const map = {
+                    'input-name':'name','input-gender':'gender','input-dob':'dob',
+                    'input-caste':'caste','input-area':'area','input-aadhaar':'aadhaar',
+                    'input-farmer-id':'farmerId','input-registry':'registry',
+                    'input-address':'address','input-helpline':'helpline','input-website':'website',
+                    'input-theme':'theme'
+                };
+                Object.keys(map).forEach(id => {
+                    if (d[map[id]] !== undefined && document.getElementById(id)) {
+                        document.getElementById(id).value = d[map[id]];
+                    }
+                });
+                if (d.village && document.getElementById('village-select')) {
+                    document.getElementById('village-select').value = d.village;
+                }
+                if (Array.isArray(d.landRecords)) {
+                    landRecords = d.landRecords;
+                }
+                if (d.photo && d.photo.startsWith('data:image/')) {
+                    currentPhotoData = d.photo;
+                    document.getElementById('card-photo').src = d.photo;
+                    document.getElementById('form-photo-preview').src = d.photo;
+                }
+            } catch(e) {
+                console.warn('Offline draft restore failed:', e);
+            }
+        }
+
+        function saveCompletedWork() {
+            const d = collectCurrentData();
+            if (!d.name && !d.farmerId) {
+                alert('पहले किसान का नाम या Farmer ID भरें।');
+                return;
+            }
+            const history = getHistory();
+            const record = {
+                ...d,
+                id: Date.now(),
+                savedAt: new Date().toISOString()
+            };
+            // Keep history lightweight: photo is kept only in current draft.
+            history.unshift(record);
+            try {
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+                saveDraftOffline();
+                alert(`काम सेव हो गया।\n\nनाम: ${d.name || '-'}\nFarmer ID: ${d.farmerId || '-'}\nकुल रिकॉर्ड: ${history.length}`);
+            } catch(e) {
+                alert('सेव नहीं हो पाया। Browser storage भर गया है। पुरानी history export/delete करें।');
+            }
+        }
+
+        function openHistoryModal() {
+            document.getElementById('history-modal').classList.remove('hidden');
+            document.getElementById('history-search').value = '';
+            renderHistory();
+        }
+
+        function closeHistoryModal() {
+            document.getElementById('history-modal').classList.add('hidden');
+        }
+
+        function renderHistory() {
+            const box = document.getElementById('history-list');
+            const q = (document.getElementById('history-search').value || '').toLowerCase().trim();
+            const history = getHistory().filter(r =>
+                !q || [r.name, r.farmerId, r.village, r.address, r.aadhaar]
+                    .join(' ').toLowerCase().includes(q)
+            );
+
+            if (!history.length) {
+                box.innerHTML = `<div class="text-center py-12 text-slate-400">
+                    <i class="fa-solid fa-folder-open text-4xl mb-3"></i>
+                    <p class="font-semibold">अभी कोई saved work नहीं है।</p>
+                    <p class="text-xs mt-1">काम पूरा होने के बाद ऊपर <b>काम सेव करें</b> दबाएँ।</p>
+                </div>`;
+                return;
+            }
+
+            box.innerHTML = `
+                <div class="text-xs text-slate-500 mb-3 font-semibold">कुल ${history.length} saved work</div>
+                <div class="space-y-2">
+                    ${history.map((r, i) => {
+                        const dt = new Date(r.savedAt);
+                        const when = isNaN(dt) ? '-' : dt.toLocaleString('en-IN');
+                        const firstVillage = r.village || (r.landRecords && r.landRecords[0] ? r.landRecords[0].village : '-');
+                        return `<div class="border rounded-xl p-3 bg-white hover:bg-slate-50">
+                            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                                <div>
+                                    <div class="font-bold text-slate-800">${escapeHtml(r.name || 'Unnamed Farmer')}</div>
+                                    <div class="text-xs text-slate-500 mt-0.5">Farmer ID: <b>${escapeHtml(r.farmerId || '-')}</b> &nbsp; | &nbsp; Village: <b>${escapeHtml(firstVillage)}</b></div>
+                                </div>
+                                <div class="text-xs text-slate-500">${escapeHtml(when)}</div>
+                            </div>
+                            <div class="text-xs text-slate-600 mt-2 truncate">${escapeHtml(r.address || '-')}</div>
+                            <div class="flex gap-2 mt-2">
+                                <button onclick="loadHistoryRecord(${r.id})" class="text-xs bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded-lg font-semibold"><i class="fa-solid fa-pen mr-1"></i> फिर से खोलें</button>
+                                <button onclick="deleteHistoryRecord(${r.id})" class="text-xs bg-rose-50 text-rose-700 hover:bg-rose-100 px-3 py-1.5 rounded-lg font-semibold"><i class="fa-solid fa-trash mr-1"></i> Delete</button>
+                            </div>
+                        </div>`;
+                    }).join('')}
+                </div>`;
+        }
+
+        function escapeHtml(value) {
+            return String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));
+        }
+
+        function loadHistoryRecord(id) {
+            const r = getHistory().find(x => x.id === id);
+            if (!r) return;
+            const fields = {
+                'input-name':r.name,'input-gender':r.gender,'input-dob':r.dob,'input-caste':r.caste,
+                'input-area':r.area,'input-aadhaar':r.aadhaar,'input-farmer-id':r.farmerId,
+                'input-registry':r.registry,'input-address':r.address,'input-helpline':r.helpline,
+                'input-website':r.website,'input-theme':r.theme
+            };
+            Object.entries(fields).forEach(([id,val]) => {
+                if (document.getElementById(id) && val !== undefined) document.getElementById(id).value = val;
+            });
+            if (r.village !== undefined) document.getElementById('village-select').value = r.village || '';
+            if (Array.isArray(r.landRecords)) landRecords = JSON.parse(JSON.stringify(r.landRecords));
+            changeTheme();
+            renderLandRecordsInputs();
+            updateCard();
+            closeHistoryModal();
+            alert('Saved work फिर से खोल दिया गया।');
+        }
+
+        function deleteHistoryRecord(id) {
+            if (!confirm('इस saved work को delete करना है?')) return;
+            const history = getHistory().filter(r => r.id !== id);
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+            renderHistory();
+        }
+
+        function clearHistory() {
+            if (!confirm('पूरी work history delete करनी है? यह वापस नहीं आएगी।')) return;
+            localStorage.removeItem(HISTORY_KEY);
+            renderHistory();
+        }
+
+        function exportHistoryCSV() {
+            const history = getHistory();
+            if (!history.length) { alert('Export करने के लिए कोई history नहीं है।'); return; }
+            const rows = [['Saved Date','Name','Farmer ID','DOB','Gender','Village','Aadhaar','Address','Land Records']];
+            history.forEach(r => rows.push([
+                new Date(r.savedAt).toLocaleString('en-IN'), r.name, r.farmerId, r.dob, r.gender,
+                r.village, r.aadhaar, r.address,
+                (r.landRecords || []).map(x => `${x.village} / ${x.dag} / ${x.area} Ha`).join(' | ')
+            ]));
+            const csv = rows.map(row => row.map(v => `"${String(v ?? '').replace(/"/g,'""')}"`).join(',')).join('\r\n');
+            const blob = new Blob(["\ufeff" + csv], {type:'text/csv;charset=utf-8;'});
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = 'Farmer_Work_History.csv';
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        // Comprehensive Database of 100 Revenue Villages, Gaon Panchayats & Post Offices under Kalgachia Circle & Rupshi Block (Barpeta, Assam)
+        const RUPSHI_KALGACHIA_VILLAGES = [
+            { name: "Aditpur", gp: "Chikni GP", po: "Chikni PO" },
+            { name: "Amguri", gp: "Titapani GP", po: "Titapani PO" },
+            { name: "Bagulamari", gp: "Lachanga GP", po: "Lachanga PO" },
+            { name: "Balagaon", gp: "Sawpur GP", po: "Sawpur PO" },
+            { name: "Balai Pathar", gp: "Balaipathar GP", po: "Balaipathar PO" },
+            { name: "Balapathar", gp: "Balaipathar GP", po: "Balaipathar PO" },
+            { name: "Balikuri Gaon", gp: "Balaipathar GP", po: "Balaipathar PO" },
+            { name: "Balikuri Pathar", gp: "Balaipathar GP", po: "Balaipathar PO" },
+            { name: "Bandarmora", gp: "Barvitha GP", po: "Barvitha PO" },
+            { name: "Banghugi", gp: "Bonghugi GP", po: "Moinbari PO" },
+            { name: "Bankabhanga", gp: "Tapeswara GP", po: "Tapeswara PO" },
+            { name: "Barbhitha", gp: "Barvitha GP", po: "Barvitha PO" },
+            { name: "Bardonga", gp: "Chikni GP", po: "Chikni PO" },
+            { name: "Barhowara", gp: "Chikni GP", po: "Chikni PO" },
+            { name: "Bartari", gp: "Guileza GP", po: "Guileza PO" },
+            { name: "Besimari", gp: "Kalgachia GP", po: "Kalgachia PO" },
+            { name: "Bhera", gp: "Isabpur GP", po: "Isabpur PO" },
+            { name: "Bilortari", gp: "Titapani GP", po: "Titapani PO" },
+            { name: "Chachapari", gp: "Sawpur GP", po: "Sawpur PO" },
+            { name: "Chandmama Gaon", gp: "Haldia GP", po: "Haldia PO" },
+            { name: "Chandmama Pathar", gp: "Haldia GP", po: "Haldia PO" },
+            { name: "Char Charia", gp: "Isabpur GP", po: "Isabpur PO" },
+            { name: "Chariatpur", gp: "Bonghugi GP", po: "Moinbari PO" },
+            { name: "Chatala Gaon", gp: "Barvitha GP", po: "Barvitha PO" },
+            { name: "Chatala N.C.", gp: "Barvitha GP", po: "Barvitha PO" },
+            { name: "Chenimari", gp: "Titapani GP", po: "Titapani PO" },
+            { name: "Chikni", gp: "Chikni GP", po: "Chikni PO" },
+            { name: "Dabandia", gp: "Bonghugi GP", po: "Moinbari PO" },
+            { name: "Deuldi", gp: "Kalgachia GP", po: "Kalgachia PO" },
+            { name: "Dewkura", gp: "Kalgachia GP", po: "Kalgachia PO" },
+            { name: "Dhakalia Para", gp: "Kalgachia GP", po: "Kalgachia PO" },
+            { name: "Digjani", gp: "Sawpur GP", po: "Sawpur PO" },
+            { name: "Dimapur", gp: "Kalgachia GP", po: "Kalgachia PO" },
+            { name: "Garali Pam", gp: "Lachanga GP", po: "Lachanga PO" },
+            { name: "Gobindapur", gp: "Guileza GP", po: "Guileza PO" },
+            { name: "Golia", gp: "Tapeswara GP", po: "Tapeswara PO" },
+            { name: "Guileza", gp: "Guileza GP", po: "Guileza PO" },
+            { name: "Gunialguri", gp: "Guileza GP", po: "Gunialguri PO" },
+            { name: "Haldia Gaon", gp: "Haldia GP", po: "Haldia PO" },
+            { name: "Haldia Pathar", gp: "Haldia GP", po: "Haldia PO" },
+            { name: "Hapachara Gaon", gp: "Tapeswara GP", po: "Tapeswara PO" },
+            { name: "Hapachara Pathar", gp: "Tapeswara GP", po: "Tapeswara PO" },
+            { name: "Hatchara", gp: "Isabpur GP", po: "Isabpur PO" },
+            { name: "Hatijuna", gp: "Lachanga GP", po: "Lachanga PO" },
+            { name: "Isabpur", gp: "Isabpur GP", po: "Isabpur PO" },
+            { name: "Jamer Kur", gp: "Bonghugi GP", po: "Moinbari PO" },
+            { name: "Jaurimari Gaon", gp: "Tapeswara GP", po: "Tapeswara PO" },
+            { name: "Jaurimari V.G.R.", gp: "Tapeswara GP", po: "Tapeswara PO" },
+            { name: "Joypur Gaon", gp: "Guileza GP", po: "Guileza PO" },
+            { name: "Joypur Pathar", gp: "Guileza GP", po: "Guileza PO" },
+            { name: "Kalgachia", gp: "Kalgachia GP", po: "Kalgachia PO" },
+            { name: "Kandulia", gp: "Lachanga GP", po: "Lachanga PO" },
+            { name: "Kasukati", gp: "Sawpur GP", po: "Sawpur PO" },
+            { name: "Kaur Jahi", gp: "Chikni GP", po: "Chikni PO" },
+            { name: "Kayakuchi Gaon", gp: "Balaipathar GP", po: "Kayakuchi PO" },
+            { name: "Kayakuchi Pathar", gp: "Balaipathar GP", po: "Kayakuchi PO" },
+            { name: "Khandakar Para", gp: "Chikni GP", po: "Chikni PO" },
+            { name: "Khar Balli", gp: "Lachanga GP", po: "Lachanga PO" },
+            { name: "Khatatari", gp: "Titapani GP", po: "Titapani PO" },
+            { name: "Khelli", gp: "Titapani GP", po: "Titapani PO" },
+            { name: "Khudrakhowa", gp: "Tapeswara GP", po: "Tapeswara PO" },
+            { name: "Khudrakuchi", gp: "Tapeswara GP", po: "Tapeswara PO" },
+            { name: "Kismat Moinbari", gp: "Bonghugi GP", po: "Moinbari PO" },
+            { name: "Kismat Moinbari N.C.", gp: "Bonghugi GP", po: "Moinbari PO" },
+            { name: "Lachanga", gp: "Lachanga GP", po: "Lachanga PO" },
+            { name: "Langla", gp: "Kalgachia GP", po: "Kalgachia PO" },
+            { name: "Manikpur", gp: "Isabpur GP", po: "Isabpur PO" },
+            { name: "Meni Simla", gp: "Sawpur GP", po: "Sawpur PO" },
+            { name: "Mohia", gp: "Haldia GP", po: "Haldia PO" },
+            { name: "Monakocha", gp: "Haldia GP", po: "Haldia PO" },
+            { name: "Mowamari", gp: "Isabpur GP", po: "Isabpur PO" },
+            { name: "Moyanbari Pam", gp: "Bonghugi GP", po: "Moinbari PO" },
+            { name: "Nadiapara", gp: "Titapani GP", po: "Titapani PO" },
+            { name: "Niz Moinbari", gp: "Bonghugi GP", po: "Moinbari PO" },
+            { name: "Pachim Moinbari", gp: "Bonghugi GP", po: "Moinbari PO" },
+            { name: "Pahartali", gp: "Titapani GP", po: "Titapani PO" },
+            { name: "Pathalia Para", gp: "Lachanga GP", po: "Lachanga PO" },
+            { name: "Pathar Chali", gp: "Sawpur GP", po: "Sawpur PO" },
+            { name: "Phulora N.C.", gp: "Guileza GP", po: "Guileza PO" },
+            { name: "Purana Sikartari", gp: "Balaipathar GP", po: "Balaipathar PO" },
+            { name: "Rampur", gp: "Barvitha GP", po: "Barvitha PO" },
+            { name: "Roukhowa", gp: "Titapani GP", po: "Titapani PO" },
+            { name: "Satra Moinbari", gp: "Bonghugi GP", po: "Moinbari PO" },
+            { name: "Sawpur", gp: "Sawpur GP", po: "Sawpur PO" },
+            { name: "Sawrachar Gaon", gp: "Haldia GP", po: "Haldia PO" },
+            { name: "Sawrachar Pathar", gp: "Haldia GP", po: "Haldia PO" },
+            { name: "Sawrachar V.G.R.", gp: "Haldia GP", po: "Haldia PO" },
+            { name: "Sikartari Pathar", gp: "Balaipathar GP", po: "Balaipathar PO" },
+            { name: "Sikartary Gaon", gp: "Balaipathar GP", po: "Balaipathar PO" },
+            { name: "Solmari", gp: "Chikni GP", po: "Chikni PO" },
+            { name: "Sonabari", gp: "Titapani GP", po: "Titapani PO" },
+            { name: "Srirampur", gp: "Barvitha GP", po: "Barvitha PO" },
+            { name: "Sutir Pathar", gp: "Kalgachia GP", po: "Kalgachia PO" },
+            { name: "Takakata", gp: "Lachanga GP", po: "Lachanga PO" },
+            { name: "Tapeswara", gp: "Tapeswara GP", po: "Tapeswara PO" },
+            { name: "Tarakandi", gp: "Barvitha GP", po: "Barvitha PO" },
+            { name: "Titapani", gp: "Titapani GP", po: "Titapani PO" },
+            { name: "Udmari", gp: "Chikni GP", po: "Chikni PO" },
+            { name: "Uprupi", gp: "Kalgachia GP", po: "Kalgachia PO" },
+            { name: "Uttar Moinbari", gp: "Bonghugi GP", po: "Moinbari PO" }
+        ];
+
+        // Sample initial land records
+        let landRecords = [
+            { village: "Uprupi", dag: "142/58", area: "0.4200" },
+            { village: "Kalgachia", dag: "210/14", area: "0.2550" },
+            { village: "Balikuri Gaon", dag: "88/02", area: "0.1800" }
+        ];
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            populateVillageDropdown();
+            restoreDraftOffline();
+            renderLandRecordsInputs();
+            updateCard();
+            setTimeout(() => saveDraftOffline(), 50);
+        });
+
+
+        // ================= JPEG CARD EXPORT =================
+        // Robust offline JPEG exporter: draws the card directly on Canvas.
+        // This avoids SVG/foreignObject failures that can happen with file:// HTML.
+
+        function _safeFileName(value) {
+            return String(value || 'Farmer').trim()
+                .replace(/[\\/:*?"<>|]+/g, '_')
+                .replace(/\s+/g, '_')
+                .slice(0, 70) || 'Farmer';
+        }
+
+        function _hexToRgb(hex) {
+            const m = String(hex || '').match(/^#([0-9a-f]{6})$/i);
+            if (!m) return [0,0,0];
+            return [parseInt(m[1].slice(0,2),16), parseInt(m[1].slice(2,4),16), parseInt(m[1].slice(4,6),16)];
+        }
+
+        function _roundRect(ctx, x, y, w, h, r) {
+            r = Math.min(r, w/2, h/2);
+            ctx.beginPath();
+            ctx.moveTo(x+r,y);
+            ctx.arcTo(x+w,y,x+w,y+h,r);
+            ctx.arcTo(x+w,y+h,x,y+h,r);
+            ctx.arcTo(x,y+h,x,y,r);
+            ctx.arcTo(x,y,x+w,y,r);
+            ctx.closePath();
+        }
+
+        function _fitFont(ctx, text, maxWidth, startSize, weight='700', family='Arial, sans-serif') {
+            let size = startSize;
+            while (size > 8) {
+                ctx.font = `${weight} ${size}px ${family}`;
+                if (ctx.measureText(String(text)).width <= maxWidth) return size;
+                size -= 1;
+            }
+            return size;
+        }
+
+        function _drawText(ctx, text, x, y, maxWidth, size, opts={}) {
+            const weight = opts.weight || '700';
+            const align = opts.align || 'left';
+            const color = opts.color || '#111827';
+            const family = opts.family || 'Arial, sans-serif';
+            const fit = opts.fit === false ? size : _fitFont(ctx, text, maxWidth, size, weight, family);
+            ctx.font = `${weight} ${fit}px ${family}`;
+            ctx.fillStyle = color;
+            ctx.textAlign = align;
+            ctx.textBaseline = opts.baseline || 'alphabetic';
+            ctx.fillText(String(text ?? ''), x, y);
+            return fit;
+        }
+
+        function _wrapLines(ctx, text, maxWidth) {
+            const words = String(text || '').split(/\s+/);
+            const lines = [];
+            let line = '';
+            for (const word of words) {
+                const test = line ? line + ' ' + word : word;
+                if (ctx.measureText(test).width <= maxWidth || !line) line = test;
+                else { lines.push(line); line = word; }
+            }
+            if (line) lines.push(line);
+            return lines;
+        }
+
+        function _themeColors() {
+            const theme = document.getElementById('input-theme')?.value || 'theme-emerald';
+            if (theme === 'theme-gold') return {dark:'#854d0e', mid:'#eab308', light:'#fefce8', ribbon:'#854d0e'};
+            if (theme === 'theme-blue') return {dark:'#1e3a8a', mid:'#3b82f6', light:'#eff6ff', ribbon:'#1e3a8a'};
+            if (theme === 'theme-earth') return {dark:'#7c2d12', mid:'#ea580c', light:'#fff7ed', ribbon:'#7c2d12'};
+            if (theme === 'theme-dark') return {dark:'#0f172a', mid:'#475569', light:'#f1f5f9', ribbon:'#0f172a'};
+            return {dark:'#065f46', mid:'#16a34a', light:'#f0fdf4', ribbon:'#065f46'};
+        }
+
+        async function _loadCanvasImage(src) {
+            if (!src) return null;
+            if (src.startsWith('data:')) {
+                return await new Promise(resolve => {
+                    const img = new Image();
+                    img.onload = () => resolve(img);
+                    img.onerror = () => resolve(null);
+                    img.src = src;
+                });
+            }
+            return await new Promise(resolve => {
+                const img = new Image();
+                img.onload = () => resolve(img);
+                img.onerror = () => resolve(null);
+                img.src = src;
+            });
+        }
+
+        function _drawImageCover(ctx, img, x, y, w, h) {
+            if (!img || !img.naturalWidth) return;
+            const ir = img.naturalWidth / img.naturalHeight;
+            const br = w / h;
+            let sx=0, sy=0, sw=img.naturalWidth, sh=img.naturalHeight;
+            if (ir > br) { sw = img.naturalHeight * br; sx = (img.naturalWidth-sw)/2; }
+            else { sh = img.naturalWidth / br; sy = (img.naturalHeight-sh)/2; }
+            ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+        }
+
+        async function _drawCardToCanvas(side) {
+            const W = 1590, H = 1002; // 530 x 334 at 3x
+            const S = 3;
+            const c = document.createElement('canvas');
+            c.width = W; c.height = H;
+            const ctx = c.getContext('2d');
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            const t = _themeColors();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0,0,W,H);
+
+            // 1px physical CSS border, rendered at 3x.
+            ctx.strokeStyle = '#111111';
+            ctx.lineWidth = 3;
+            _roundRect(ctx, 1.5, 1.5, W-3, H-3, 6*S);
+            ctx.stroke();
+
+            // Top accent.
+            ctx.fillStyle = t.dark;
+            ctx.fillRect(0, 0, W, 3*S);
+            ctx.fillStyle = t.mid;
+            ctx.fillRect(W/2-70*S, 0, 140*S, 3*S);
+
+            // Header.
+            const pad = 20*S;
+            ctx.strokeStyle = '#e5c76b';
+            ctx.lineWidth = 1*S;
+            ctx.beginPath(); ctx.moveTo(pad, 76*S); ctx.lineTo(W-pad,76*S); ctx.stroke();
+
+            const logo = await _loadCanvasImage(document.querySelector('#card-front-container img[alt="AgriStack"]')?.src);
+            const emblem = await _loadCanvasImage(document.querySelector('#card-front-container img[alt="Emblem"]')?.src);
+            if (logo) _drawImageCover(ctx, logo, pad, 12*S, 105*S, 28*S);
+            if (emblem) _drawImageCover(ctx, emblem, W-pad-38*S, 9*S, 30*S, 35*S);
+
+            _drawText(ctx, 'Government of India', W/2, 31*S, 300*S, 15*S, {weight:'800',align:'center',color:t.dark,fit:false});
+            _drawText(ctx, 'FARMER REGISTRY', W/2, 56*S, 300*S, 12*S, {weight:'800',align:'center',color:t.dark,fit:false});
+
+            if (side === 'front') {
+                const photoEl = document.getElementById('card-photo');
+                const photo = await _loadCanvasImage(photoEl?.src);
+                const px = 20*S, py = 87*S, pw = 100*S, ph = 122*S;
+                ctx.strokeStyle = t.dark; ctx.lineWidth = 2*S;
+                ctx.strokeRect(px,py,pw,ph);
+                if (photo) _drawImageCover(ctx, photo, px+2*S, py+2*S, pw-4*S, ph-4*S);
+
+                const x0 = 132*S, y0 = 100*S;
+                const name = document.getElementById('input-name')?.value || '';
+                const gender = document.getElementById('input-gender')?.value || '';
+                const dob = document.getElementById('input-dob')?.value || '';
+                const caste = document.getElementById('input-caste')?.value || '';
+                const area = document.getElementById('input-area')?.value || '';
+                const aadhaar = formatAadhaar(document.getElementById('input-aadhaar')?.value || '');
+
+                const rows = [['Name',name],['Gender',gender],['DOB',dob],['Caste',caste],['Area',area],['Aadhaar',aadhaar]];
+                rows.forEach((r,i) => {
+                    const yy = y0 + i*20*S;
+                    _drawText(ctx, r[0], x0, yy, 48*S, 12*S, {weight:'800',color:'#111827',fit:false});
+                    _drawText(ctx, ': ' + r[1], x0+48*S, yy, 190*S, 12*S, {weight:i===0||i===5?'800':'700',color:'#1f2937'});
+                });
+
+                // QR image if currently loaded. If not loaded (fully offline), leave a clean placeholder.
+                const qrEl = document.getElementById('card-qrcode');
+                if (qrEl?.complete && qrEl.naturalWidth) {
+                    try {
+                        const qr = await _loadCanvasImage(qrEl.src);
+                        if (qr) {
+                            ctx.fillStyle='#fff'; ctx.fillRect(405*S,87*S,92*S,92*S);
+                            ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=2*S; ctx.strokeRect(405*S,87*S,92*S,92*S);
+                            ctx.drawImage(qr,409*S,91*S,84*S,84*S);
+                        }
+                    } catch(e) {}
+                }
+
+                // Bottom ID band + ribbon.
+                ctx.fillStyle = t.light;
+                ctx.fillRect(20*S, 270*S, W-40*S, 30*S);
+                ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1*S; ctx.strokeRect(20*S,270*S,W-40*S,30*S);
+                const fid = document.getElementById('input-farmer-id')?.value || '';
+                _drawText(ctx, 'Farmer ID : ' + fid, W/2, 291*S, 450*S, 17*S, {weight:'900',align:'center',color:t.dark});
+
+                ctx.fillStyle = t.ribbon;
+                ctx.fillRect(0, 300*S, W, 34*S);
+                const registry = document.getElementById('input-registry')?.value || 'Assam Farmer Registry';
+                _drawText(ctx, registry, W/2, 322*S, 500*S, 14*S, {weight:'800',align:'center',color:'#fff'});
+            } else {
+                const address = document.getElementById('input-address')?.value || '';
+                const helpline = document.getElementById('input-helpline')?.value || '';
+                const website = document.getElementById('input-website')?.value || '';
+
+                _drawText(ctx, 'Address / पता', 20*S, 94*S, 300*S, 15*S, {weight:'900',color:'#111827',fit:false});
+                ctx.fillStyle = t.dark; ctx.fillRect(20*S,100*S,2*S,58*S);
+                ctx.font = `800 ${14*S}px Arial`;
+                ctx.fillStyle='#111827';
+                const addrLines = _wrapLines(ctx, address, W-70*S).slice(0,4);
+                addrLines.forEach((line,i)=>ctx.fillText(line,28*S,(114+i*14)*S));
+                const mobile = document.getElementById('input-mobile')?.value || '';
+                _drawText(ctx, 'Mobile No.: ' + (mobile || '—'), 28*S, 172*S, W-70*S, 13*S, {weight:'900',color:'#111827'});
+
+                _drawText(ctx, 'LAND & VILLAGE DETAILS', 20*S, 160*S, 350*S, 10*S, {weight:'900',color:'#111827',fit:false});
+
+                const tx=20*S, ty=168*S, tw=W-40*S, rowH=25*S;
+                ctx.fillStyle='#f1f5f9'; ctx.fillRect(tx,ty,tw,rowH);
+                ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=1*S; ctx.strokeRect(tx,ty,tw,rowH);
+                const cols=[0,230,500,tw];
+                ['Village (गाँव)','Khasra / Dag','Area (Hectare)'].forEach((h,i)=>{
+                    _drawText(ctx,h,tx+((cols[i]+cols[i+1])/2),ty+17*S,cols[i+1]-cols[i]-8*S,9*S,{weight:'900',align:'center',color:'#1f2937'});
+                    if(i<2){ctx.beginPath();ctx.moveTo(tx+cols[i+1],ty);ctx.lineTo(tx+cols[i+1],ty+rowH+4*rowH);ctx.stroke();}
+                });
+
+                const recs = Array.isArray(landRecords) ? landRecords.slice(0,4) : [];
+                recs.forEach((r,i)=>{
+                    const yy=ty+rowH+i*rowH;
+                    ctx.fillStyle='#fff'; ctx.fillRect(tx,yy,tw,rowH);
+                    ctx.strokeStyle='#e2e8f0'; ctx.strokeRect(tx,yy,tw,rowH);
+                    _drawText(ctx,r.village||'-',tx+115*S,yy+17*S,220*S,10*S,{weight:'800',align:'center',color:'#1f2937'});
+                    _drawText(ctx,r.dag||'-',tx+365*S,yy+17*S,230*S,10*S,{weight:'800',align:'center',color:'#334155'});
+                    _drawText(ctx,r.area||'-',tx+((500+tw/S)/2)*S,yy+17*S,tw-500*S,10*S,{weight:'800',align:'center',color:'#111827'});
+                });
+
+                // Footer.
+                ctx.fillStyle='#f1f5f9'; ctx.fillRect(0, 300*S, W, 34*S);
+                ctx.strokeStyle='#cbd5e1'; ctx.strokeRect(0,300*S,W,34*S);
+                _drawText(ctx, helpline, 20*S, 322*S, 240*S, 11*S, {weight:'800',color:'#111827',fit:false});
+                _drawText(ctx, website, W-20*S, 322*S, 310*S, 11*S, {weight:'800',align:'right',color:'#111827'});
+            }
+
+            return c;
+        }
+
+        async function _cardToJPEG(side, filename) {
+            const canvas = await _drawCardToCanvas(side);
+            const jpeg = canvas.toDataURL('image/jpeg', 0.95);
+            const a = document.createElement('a');
+            a.href = jpeg;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        async function saveCardJPEG(side) {
+            const name = document.getElementById('input-name')?.value || 'Farmer';
+            const id = document.getElementById('input-farmer-id')?.value || 'ID';
+            const base = _safeFileName(name + '_' + id);
+            try {
+                await _cardToJPEG(side, base + (side === 'back' ? '_BACK.jpg' : '_FRONT.jpg'));
+            } catch (e) {
+                console.error(e);
+                alert('JPEG save में समस्या हुई: ' + (e?.message || e));
+            }
+        }
+
+        async function saveBothCardsJPEG() {
+            const name = document.getElementById('input-name')?.value || 'Farmer';
+            const id = document.getElementById('input-farmer-id')?.value || 'ID';
+            const base = _safeFileName(name + '_' + id);
+            try {
+                await _cardToJPEG('front', base + '_FRONT.jpg');
+                await new Promise(r => setTimeout(r, 400));
+                await _cardToJPEG('back', base + '_BACK.jpg');
+            } catch (e) {
+                console.error(e);
+                alert('JPEG save में समस्या हुई: ' + (e?.message || e));
+            }
+        }
+
+        // Save the current form continuously to this browser's local storage.
+        // This is a draft, separate from the explicit "काम सेव करें" history.
+        document.addEventListener('input', () => {
+            clearTimeout(window.__draftTimer);
+            window.__draftTimer = setTimeout(saveDraftOffline, 250);
+        });
+        document.addEventListener('change', () => {
+            clearTimeout(window.__draftTimer);
+            window.__draftTimer = setTimeout(saveDraftOffline, 250);
+        });
+
+        function populateVillageDropdown() {
+            const select = document.getElementById('village-select');
+            select.innerHTML = '<option value="">-- चुनें ( Select Village from List ) --</option>';
+            
+            RUPSHI_KALGACHIA_VILLAGES.sort((a,b) => a.name.localeCompare(b.name)).forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.name;
+                opt.textContent = `${v.name} (${v.gp} | P.O.: ${v.po})`;
+                select.appendChild(opt);
+            });
+        }
+
+        function onVillageSelectChange() {
+            const select = document.getElementById('village-select');
+            const selectedVillage = select.value;
+            if (!selectedVillage) return;
+
+            const vObj = RUPSHI_KALGACHIA_VILLAGES.find(item => item.name === selectedVillage);
+            const poText = vObj ? `, P.O. ${vObj.po.replace(' PO', '')}` : ', P.O. Kalgachia';
+            const gpText = vObj ? `, G.P. ${vObj.gp}` : '';
+
+            // Auto-generate address with exact Village, P.O., G.P., Police Station and District
+            const newAddress = `Vill: ${selectedVillage}${poText}${gpText}, P.S. Kalgachia, Dist: Barpeta, Assam, PIN: 781321`;
+            document.getElementById('input-address').value = newAddress;
+
+            // Auto update or add to land records if fewer than 4
+            if (landRecords.length < 4) {
+                landRecords.push({ village: selectedVillage, dag: "101/01", area: "0.2000" });
+                renderLandRecordsInputs();
+            }
+
+            updateCard();
+        }
+
+        function formatAadhaar(val) {
+            const clean = val.replace(/\D/g, '').substring(0, 12);
+            return clean.replace(/(.{4})/g, '$1 ').trim();
+        }
+
+        function handlePhotoUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                const img = new Image();
+                img.onload = function() {
+                    const max = 700;
+                    const scale = Math.min(1, max / Math.max(img.width, img.height));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = Math.max(1, Math.round(img.width * scale));
+                    canvas.height = Math.max(1, Math.round(img.height * scale));
+                    canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+                    currentPhotoData = canvas.toDataURL('image/jpeg', 0.82);
+                    document.getElementById('card-photo').src = currentPhotoData;
+                    document.getElementById('form-photo-preview').src = currentPhotoData;
+                    saveDraftOffline();
+                };
+                img.src = evt.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function changeTheme() {
+            const theme = document.getElementById('input-theme').value;
+            const front = document.getElementById('card-front-container');
+            const back = document.getElementById('card-back-container');
+
+            front.className = `id-card relative shadow-md ${theme}`;
+            back.className = `id-card relative shadow-md ${theme}`;
+        }
+
+        function renderLandRecordsInputs() {
+            const container = document.getElementById('land-records-inputs-container');
+            container.innerHTML = '';
+
+            landRecords.forEach((item, index) => {
+                const row = document.createElement('div');
+                row.className = "flex items-center gap-1.5 bg-slate-50 p-2 rounded-lg border border-slate-200 text-xs";
+                row.innerHTML = `
+                    <input type="text" value="${item.village}" placeholder="Village Name" oninput="updateLandRecord(${index}, 'village', this.value)" class="w-2/5 px-2 py-1 border rounded bg-white font-medium text-slate-800">
+                    <input type="text" value="${item.dag}" placeholder="Dag / Khasra No" oninput="updateLandRecord(${index}, 'dag', this.value)" class="w-1/3 px-1.5 py-1 border rounded bg-white text-center">
+                    <input type="text" value="${item.area}" placeholder="Area (Ha)" oninput="updateLandRecord(${index}, 'area', this.value)" class="w-1/4 px-1.5 py-1 border rounded bg-white text-center">
+                    <button onclick="removeLandRecordRow(${index})" class="text-rose-500 hover:text-rose-700 px-1 py-1 cursor-pointer" title="Remove">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                `;
+                container.appendChild(row);
+            });
+
+            updateLandTableOnCard();
+        }
+
+        function addLandRecordRow() {
+            if (landRecords.length >= 4) {
+                alert("अधिकतम 4 पंक्तियाँ ही आईडी कार्ड में फिट हो सकती हैं।");
+                return;
+            }
+            landRecords.push({ village: "Kalgachia", dag: "100", area: "0.1000" });
+            renderLandRecordsInputs();
+        }
+
+        function removeLandRecordRow(index) {
+            landRecords.splice(index, 1);
+            renderLandRecordsInputs();
+        }
+
+        function updateLandRecord(index, field, value) {
+            if (landRecords[index]) {
+                landRecords[index][field] = value;
+                updateLandTableOnCard();
+            }
+        }
+
+        function updateLandTableOnCard() {
+            const tbody = document.getElementById('card-land-table-body');
+            tbody.innerHTML = '';
+
+            if (landRecords.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="3" class="py-2 text-[10px] text-slate-400 italic">No Land Records Added</td></tr>`;
+                return;
+            }
+
+            landRecords.forEach(item => {
+                const tr = document.createElement('tr');
+                tr.className = "border-b border-slate-200 text-[11px] font-medium text-slate-700";
+                tr.innerHTML = `
+                    <td class="py-0.5 px-1 border-r border-slate-200 font-semibold text-slate-800 truncate max-w-[140px]">${item.village || '-'}</td>
+                    <td class="py-0.5 px-1 border-r border-slate-200">${item.dag || '-'}</td>
+                    <td class="py-0.5 px-1 font-bold text-slate-900">${item.area || '-'}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function updateCard() {
+            // Front Details
+            const name = document.getElementById('input-name').value;
+            const gender = document.getElementById('input-gender').value;
+            const dob = document.getElementById('input-dob').value;
+            const caste = document.getElementById('input-caste').value;
+            const area = document.getElementById('input-area').value;
+            const rawAadhaar = document.getElementById('input-aadhaar').value;
+            const farmerId = document.getElementById('input-farmer-id').value;
+            const registry = document.getElementById('input-registry').value;
+
+            document.getElementById('card-name').textContent = name || 'Shahjahan Ali';
+            document.getElementById('card-gender').textContent = gender || 'Male';
+            document.getElementById('card-dob').textContent = dob || '15/08/1975';
+            document.getElementById('card-caste').textContent = caste || 'General';
+            document.getElementById('card-area').textContent = area || 'Rural';
+            document.getElementById('card-aadhaar').textContent = formatAadhaar(rawAadhaar) || '9500 0800 5840';
+            document.getElementById('card-farmer-id').textContent = farmerId || '0000 0000 000';
+            document.getElementById('card-registry').textContent = registry || 'Assam Farmer Registry';
+
+            // Back Details
+            const address = document.getElementById('input-address').value;
+            const mobile = document.getElementById('input-mobile')?.value || '';
+            const helpline = document.getElementById('input-helpline').value;
+            const website = document.getElementById('input-website').value;
+
+            document.getElementById('card-address').textContent = address || 'C/o A.Samad, APRUPI, Uprupi, Kalgachia, Barpeta, Assam, 781321';
+            if (document.getElementById('card-mobile')) document.getElementById('card-mobile').textContent = mobile || '—';
+            document.getElementById('card-helpline').textContent = helpline || '1800-180-1551';
+            document.getElementById('card-website').textContent = website || 'www.asfr.agristack.gov.in';
+
+            updateLandTableOnCard();
+
+            const qrPayload = generateQRPayload({
+                farmerId, name, gender, dob, caste, area, rawAadhaar, registry, address
+            });
+
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(qrPayload)}`;
+            document.getElementById('card-qrcode').src = qrUrl;
+            document.getElementById('modal-qr-img').src = qrUrl;
+            document.getElementById('modal-qr-payload').value = qrPayload;
+            document.getElementById('modal-qr-farmerid').textContent = farmerId || '0000 0000 000';
+            document.getElementById('modal-qr-name').textContent = name || 'Shahjahan Ali';
+            if (document.getElementById('modal-qr-dob')) {
+                document.getElementById('modal-qr-dob').textContent = dob || '15/08/1975';
+            }
+            document.getElementById('modal-qr-district').textContent = 'Barpeta, Assam';
+            saveDraftOffline();
+        }
+
+        function generateQRPayload(data) {
+            const qrMode = document.getElementById('input-qr-mode') ? document.getElementById('input-qr-mode').value : 'simple';
+            const cleanId = (data.farmerId || '00000000000').replace(/\s+/g, '');
+            const maskedAadhaar = data.rawAadhaar ? `XXXX-XXXX-${data.rawAadhaar.slice(-4)}` : 'XXXX-XXXX-5840';
+
+            if (qrMode === 'simple') {
+                return `NAME: ${data.name || 'Shahjahan Ali'}\nFARMER ID: ${cleanId}\nDOB: ${data.dob || '15/08/1975'}`;
+            } else if (qrMode === 'url') {
+                return `https://asfr.agristack.gov.in/verify?farmerId=${cleanId}&state=AS&block=Rupshi&dist=Barpeta`;
+            } else if (qrMode === 'vcard') {
+                return `BEGIN:VCARD\nVERSION:3.0\nFN:${data.name}\nNOTE:Farmer ID: ${cleanId} | DOB: ${data.dob}\nORG:Assam Farmer Registry (AgriStack)\nTITLE:Registered Farmer\nTEL;TYPE=CELL:18001801551\nEND:VCARD`;
+            } else if (qrMode === 'plain') {
+                return `AGRISTACK-FARMER-ID:${cleanId}`;
+            }
+
+            // Full AgriStack Digital JSON with Name, Farmer ID, and DOB clearly structured
+            const payloadObj = {
+                scheme: "AgriStack Digital Farmer ID",
+                version: "2.0",
+                name: data.name || "Shahjahan Ali",
+                farmerId: cleanId,
+                dob: data.dob || "15/08/1975",
+                aadhaarMasked: maskedAadhaar,
+                gender: data.gender || "Male",
+                caste: data.caste || "General",
+                areaCategory: data.area || "Rural",
+                block: "Rupshi Dev Block",
+                circle: "Kalgachia Circle",
+                district: "Barpeta",
+                state: "Assam",
+                registry: data.registry || "Assam Farmer Registry",
+                verifiedBy: "Revenue Circle Officer, Kalgachia",
+                status: "VERIFIED"
+            };
+
+            return JSON.stringify(payloadObj, null, 2);
+        }
+
+        function openQrModal() {
+            document.getElementById('qr-modal').classList.remove('hidden');
+        }
+
+        function closeQrModal() {
+            document.getElementById('qr-modal').classList.add('hidden');
+        }
+
+        function copyQrPayload() {
+            const textarea = document.getElementById('modal-qr-payload');
+            textarea.select();
+            document.execCommand('copy');
+            alert('QR Code Payload copied to clipboard!');
+        }
+
+        function resetForm() {
+            document.getElementById('input-name').value = "Shahjahan Ali";
+            document.getElementById('input-gender').value = "Male";
+            document.getElementById('input-dob').value = "15/08/1975";
+            document.getElementById('input-caste').value = "General";
+            document.getElementById('input-area').value = "Rural";
+            document.getElementById('input-aadhaar').value = "950008005840";
+            document.getElementById('input-farmer-id').value = "0000 0000 000";
+            document.getElementById('input-registry').value = "Assam Farmer Registry";
+            document.getElementById('village-select').value = "";
+            document.getElementById('input-address').value = "C/o A.Samad, APRUPI, Uprupi, Kalgachia, Barpeta, Assam, 781321";
+            document.getElementById('input-mobile').value = "";
+            document.getElementById('input-theme').value = "theme-emerald";
+
+            landRecords = [
+                { village: "Uprupi", dag: "142/58", area: "0.4200" },
+                { village: "Kalgachia", dag: "210/14", area: "0.2550" },
+                { village: "Balikuri Gaon", dag: "88/02", area: "0.1800" }
+            ];
+
+            currentPhotoData = '';
+            document.getElementById('card-photo').src = 'https://images.unsplash.com/photo-1566947168307-2ee316fa3ff7?q=80&w=200&auto=format&fit=crop';
+            document.getElementById('form-photo-preview').src = 'https://images.unsplash.com/photo-1566947168307-2ee316fa3ff7?q=80&w=200&auto=format&fit=crop';
+            changeTheme();
+            renderLandRecordsInputs();
+            updateCard();
+            saveDraftOffline();
+        }
+    </script>
+</body>
+</html>
