@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ID Card Auto Crop & Print</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f6f8;color:#17202a}
+header{background:#111827;color:#fff;padding:16px 22px;display:flex;justify-content:space-between;align-items:center}
+header h1{margin:0;font-size:21px}header span{font-size:12px;color:#cbd5e1}
+.wrap{max-width:1250px;margin:18px auto;padding:0 15px}.panel{background:#fff;border-radius:12px;padding:16px;margin-bottom:15px;box-shadow:0 2px 10px #00000012}
+.toolbar{display:flex;gap:9px;flex-wrap:wrap;align-items:center}
+button,.filebtn,select,input[type=number]{border:1px solid #cbd5e1;border-radius:8px;padding:9px 12px;background:#fff;font-size:14px}
+button,.filebtn{cursor:pointer}button.primary,.filebtn.primary{background:#111827;color:#fff;border-color:#111827}
+button:disabled{opacity:.45;cursor:not-allowed}
+input[type=file]{display:none}.status{margin-top:10px;color:#475569;font-size:13px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:15px}
+h2{font-size:16px;margin:0 0 10px}.preview{position:relative;background:#e5e7eb;min-height:400px;display:flex;align-items:center;justify-content:center;overflow:auto;border-radius:9px;padding:10px}
+canvas{max-width:100%;height:auto;display:block}.hint{font-size:13px;color:#64748b;text-align:center;padding:30px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}
+.card{border:1px solid #dbe1e8;border-radius:10px;padding:10px;background:#fff}.card canvas{width:100%;background:#f8fafc}
+.cardtop{display:flex;justify-content:space-between;align-items:center;margin-bottom:7px;font-weight:700;font-size:14px}
+.small{font-size:12px;color:#64748b;font-weight:400}.actions{display:flex;gap:7px;margin-top:8px;flex-wrap:wrap}
+.settings{display:flex;gap:15px;flex-wrap:wrap;align-items:center;font-size:13px}.settings label{display:flex;gap:6px;align-items:center}
+.notice{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;padding:10px;border-radius:8px;font-size:13px}
+@media(max-width:800px){.grid{grid-template-columns:1fr}}
+@media print{
+ header,.toolbar,.status,.notice,.settings,.no-print,.grid>section:first-child{display:none!important}
+ body,.wrap,.panel{background:#fff;box-shadow:none}.cards{display:block}
+ .card{page-break-inside:avoid;border:0;margin-bottom:20px}.card canvas{width:auto;max-width:100%;max-height:53.98mm}
+}
+</style>
+</head>
+<body>
+<header><h1>ID Card Auto Crop & Print</h1><span>Offline browser tool</span></header>
+<div class="wrap">
+<div class="panel">
+ <div class="toolbar">
+  <label class="filebtn primary" for="file">📄 Upload PDF / Image</label>
+  <input id="file" type="file" accept=".pdf,image/*">
+  <button id="detect" disabled>🔍 Auto Detect Cards</button>
+  <button id="manual" disabled>✂ Manual Crop</button>
+  <button id="reset" disabled>↻ Reset</button>
+  <button id="zip" disabled>⬇ Download All</button>
+  <button id="print" disabled>🖨 Print Cards</button>
+ </div>
+ <div class="status" id="status">Upload an Aadhaar, PAN or Voter ID PDF/image to begin.</div>
+</div>
+
+<div class="panel settings">
+ <label>Margin <input id="margin" type="number" value="4" min="0" max="30" step="1"> px</label>
+ <label>Print size
+  <select id="size"><option value="fit">Fit to page</option><option value="pvc">PVC 85.60 × 53.98 mm</option><option value="actual">Actual detected size</option></select>
+ </label>
+ <label>Render DPI <input id="dpi" type="number" value="400" min="72" max="1200" step="1"></label>
+ <label>File format
+  <select id="format"><option value="jpeg" selected>JPEG (smaller file)</option><option value="png">PNG (lossless)</option></select>
+ </label>
+ <label id="qualityWrap">Quality <input id="quality" type="number" value="92" min="50" max="100" step="1"> %</label>
+ <label><input id="deskew" type="checkbox" checked> Straighten slight tilt</label>
+</div>
+
+<div class="notice no-print">
+Files are processed locally in this browser. This tool does not upload the PDF/image to a server. Automatic detection uses card-like rectangular regions; if detection is imperfect, use Manual Crop.
+</div>
+
+<div class="grid">
+<section class="panel">
+ <h2>Original Page</h2>
+ <div class="preview" id="sourceBox"><div class="hint">No file loaded</div></div>
+</section>
+<section class="panel">
+ <h2>Detected Cards</h2>
+ <div class="cards" id="cards"><div class="hint">Detected cards will appear here.</div></div>
+</section>
+</div>
+</div>
+
+<script>
+/*
+  Libraries are loaded from CDNs for portability. For a truly air-gapped PC,
+  download pdf.js and jszip locally and replace these URLs with local copies.
+*/
+const PDFJS_URL="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.min.mjs";
+const PDFJS_WORKER="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/4.10.38/pdf.worker.min.mjs";
+const JSZIP_URL="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js";
+
+let pdfjs=null, jszip=null, sourceCanvas=null, originalImage=null, pageScale=1, detected=[], manualMode=false;
+
+const $=id=>document.getElementById(id);
+const status=t=>$("status").textContent=t;
+
+async function loadLibs(){
+ try{
+  pdfjs=await import(PDFJS_URL);
+  pdfjs.GlobalWorkerOptions.workerSrc=PDFJS_WORKER;
+  await new Promise((res,rej)=>{
+   const s=document.createElement("script");s.src=JSZIP_URL;s.onload=res;s.onerror=rej;document.head.appendChild(s);
+  });
+  jszip=window.JSZip;
+ }catch(e){console.error(e);status("Library load failed. Internet is required for the first load; use local library files for fully offline operation.");}
+}
+loadLibs();
+
+$("file").onchange=async e=>{
+ const f=e.target.files[0]; if(!f)return;
+ detected=[];$("cards").innerHTML="";$("reset").disabled=false;
+ status("Loading "+f.name+"...");
+ try{
+  if(f.type==="application/pdf"||f.name.toLowerCase().endsWith(".pdf")) await renderPDF(f);
+  else await renderImage(f);
+  $("detect").disabled=false;$("manual").disabled=false;
+  status("Loaded. Click Auto Detect Cards.");
+ }catch(err){console.error(err);status("Could not open file: "+err.message);}
+};
+
+async function renderPDF(file){
+ const data=await file.arrayBuffer();
+ const pdf=await pdfjs.getDocument({data}).promise;
+ // For card work, process the first page; additional pages are processed sequentially by the detector.
+ const page=await pdf.getPage(1);
+ const base=page.getViewport({scale:1});
+ const dpi=Math.max(72,Math.min(1200,Number($("dpi").value)||400));
+ let scale=dpi/72; // pdf.js viewport scale=1 corresponds to 72 DPI
+ const maxDim=7000; // safety ceiling so very high DPI on large pages doesn't crash the browser canvas
+ if(base.width*scale>maxDim||base.height*scale>maxDim){
+  scale=Math.min(maxDim/base.width,maxDim/base.height);
+  status("Requested DPI too high for this page size — capped to stay within browser canvas limits.");
+ }
+ const vp=page.getViewport({scale});
+ sourceCanvas=document.createElement("canvas");
+ sourceCanvas.width=Math.round(vp.width);sourceCanvas.height=Math.round(vp.height);
+ await page.render({canvasContext:sourceCanvas.getContext("2d"),viewport:vp}).promise;
+ pageScale=scale;
+ showSource();
+}
+async function renderImage(file){
+ const url=URL.createObjectURL(file);
+ const img=new Image(); img.onload=()=>{
+  const maxW=4000,scale=Math.min(1,maxW/img.naturalWidth);
+  sourceCanvas=document.createElement("canvas");sourceCanvas.width=Math.round(img.naturalWidth*scale);sourceCanvas.height=Math.round(img.naturalHeight*scale);
+  sourceCanvas.getContext("2d").drawImage(img,0,0,sourceCanvas.width,sourceCanvas.height);
+  URL.revokeObjectURL(url);showSource();
+ };img.src=url;
+}
+function showSource(){
+ $("sourceBox").innerHTML="";
+ $("sourceBox").appendChild(sourceCanvas);
+}
+
+$("detect").onclick=()=>autoDetect();
+$("reset").onclick=()=>{
+ detected=[];manualMode=false;$("cards").innerHTML='<div class="hint">Detected cards will appear here.</div>';
+ if(sourceCanvas)showSource();$("zip").disabled=true;$("print").disabled=true;
+ status("Reset. Click Auto Detect Cards.");
+};
+
+function cvReady(){return typeof cv!=="undefined" && cv.Mat;}
+
+async function loadOpenCV(){
+ if(cvReady())return;
+ await new Promise((resolve,reject)=>{
+  const s=document.createElement("script");s.src="https://docs.opencv.org/4.x/opencv.js";
+  s.onload=()=>{let n=0;const t=setInterval(()=>{if(cvReady()){clearInterval(t);resolve()}else if(++n>100){clearInterval(t);reject(new Error("OpenCV timeout"))}},100)};
+  s.onerror=reject;document.head.appendChild(s);
+ });
+}
+
+async function autoDetect(){
+ if(!sourceCanvas)return;
+ status("Detecting card rectangles...");
+ try{await loadOpenCV();}catch(e){status("Auto detection library could not load. Use Manual Crop.");return;}
+ const src=cv.imread(sourceCanvas);
+ const gray=new cv.Mat(), blur=new cv.Mat(), edges=new cv.Mat();
+ cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);
+ cv.GaussianBlur(gray,blur,new cv.Size(5,5),0,0,cv.BORDER_DEFAULT);
+ cv.Canny(blur,edges,60,160);
+ const contours=new cv.MatVector(), hierarchy=new cv.Mat();
+ cv.findContours(edges,contours,hierarchy,cv.RETR_LIST,cv.CHAIN_APPROX_SIMPLE);
+ const W=sourceCanvas.width,H=sourceCanvas.height, pageArea=W*H;
+ let candidates=[];
+ for(let i=0;i<contours.size();i++){
+  const c=contours.get(i), peri=cv.arcLength(c,true), approx=new cv.Mat();
+  cv.approxPolyDP(c,approx,0.025*peri,true);
+  const r=cv.boundingRect(approx), area=r.width*r.height, ratio=r.width/r.height;
+  const fill=area/pageArea;
+  const plausible=(ratio>=1.15&&ratio<=2.3&&fill>0.008&&fill<0.75);
+  if(approx.rows===4&&plausible){
+   candidates.push({x:r.x,y:r.y,w:r.width,h:r.height,area,score:scoreRect(r,W,H)});
+  }
+  approx.delete();c.delete();
+ }
+ gray.delete();blur.delete();edges.delete();contours.delete();hierarchy.delete();src.delete();
+
+ // Merge nested/duplicate contours and prefer large card-like rectangles.
+ candidates.sort((a,b)=>b.score-a.score);
+ const chosen=[];
+ for(const c of candidates){
+  if(chosen.some(d=>iou(c,d)>0.70))continue;
+  chosen.push(c);
+  if(chosen.length>=8)break;
+ }
+ // A4-like page often creates a lot of text rectangles. Keep only strong candidates.
+ let strong=chosen.filter(c=>c.score>0.55);
+ if(!strong.length) strong=chosen.filter(c=>c.score>0.35);
+ strong.sort((a,b)=>(a.y-b.y)|| (a.x-b.x));
+ detected=strong;
+ if(!detected.length){status("No reliable card rectangle found. Use Manual Crop.");return;}
+ drawBoxes();
+ renderCards();
+ status("Detected "+detected.length+" card region(s). Check the crop preview.");
+}
+function scoreRect(r,W,H){
+ const ratio=r.width/r.height;
+ const ratioScore=Math.max(0,1-Math.abs(ratio-1.586)/1.0);
+ const areaScore=Math.min(1,(r.width*r.height)/(W*H*0.12));
+ const edgeScore=Math.min(1,r.width/W)*0.6+Math.min(1,r.height/H)*0.4;
+ return ratioScore*.55+areaScore*.30+edgeScore*.15;
+}
+function iou(a,b){
+ const x=Math.max(a.x,b.x),y=Math.max(a.y,b.y),x2=Math.min(a.x+a.w,b.x+b.w),y2=Math.min(a.y+a.h,b.y+b.h);
+ const inter=Math.max(0,x2-x)*Math.max(0,y2-y);
+ return inter/(a.w*a.h+b.w*b.h-inter);
+}
+function drawBoxes(){
+ const wrap=document.createElement("div");wrap.style.position="relative";wrap.style.maxWidth="100%";
+ const img=document.createElement("canvas");img.width=sourceCanvas.width;img.height=sourceCanvas.height;img.style.width="100%";img.getContext("2d").drawImage(sourceCanvas,0,0);
+ wrap.appendChild(img);
+ detected.forEach((r,i)=>{
+  const b=document.createElement("div");Object.assign(b.style,{position:"absolute",left:(r.x/sourceCanvas.width*100)+"%",top:(r.y/sourceCanvas.height*100)+"%",width:(r.w/sourceCanvas.width*100)+"%",height:(r.h/sourceCanvas.height*100)+"%",border:"3px solid #ef4444",pointerEvents:"none"});
+  const t=document.createElement("span");t.textContent="Card "+(i+1);Object.assign(t.style,{position:"absolute",left:"0",top:"0",background:"#ef4444",color:"#fff",fontSize:"12px",padding:"2px 5px"});b.appendChild(t);wrap.appendChild(b);
+ });
+ $("sourceBox").innerHTML="";$("sourceBox").appendChild(wrap);
+}
+function cropRect(r){
+ const m=Number($("margin").value)||0;
+ const x=Math.max(0,r.x-m),y=Math.max(0,r.y-m),x2=Math.min(sourceCanvas.width,r.x+r.w+m),y2=Math.min(sourceCanvas.height,r.y+r.h+m);
+ const c=document.createElement("canvas");c.width=x2-x;c.height=y2-y;c.getContext("2d").drawImage(sourceCanvas,x,y,c.width,c.height,0,0,c.width,c.height);
+ return c;
+}
+function renderCards(){
+ const box=$("cards");box.innerHTML="";
+ detected.forEach((r,i)=>{
+  const c=cropRect(r),wrap=document.createElement("div");wrap.className="card";
+  const top=document.createElement("div");top.className="cardtop";
+  top.innerHTML="<span>Card "+(i+1)+"</span><span class='small'>"+c.width+" × "+c.height+" px</span>";
+  const im=document.createElement("canvas");im.width=c.width;im.height=c.height;im.getContext("2d").drawImage(c,0,0);
+  const actions=document.createElement("div");actions.className="actions";
+  const dl=document.createElement("button");dl.textContent="Download "+fmtInfo().ext.toUpperCase();dl.onclick=()=>downloadCanvas(c,"ID-Card-"+(i+1)+".png");
+  const pr=document.createElement("button");pr.textContent="Print";pr.onclick=()=>printCanvas(c,i+1);
+  actions.append(dl,pr);wrap.append(top,im,actions);box.appendChild(wrap);
+ });
+ $("zip").disabled=detected.length===0;$("print").disabled=detected.length===0;
+}
+$("margin").onchange=()=>{if(detected.length)renderCards()};
+$("format").onchange=()=>{$("qualityWrap").style.display=$("format").value==="jpeg"?"":"none";if(detected.length)renderCards()};
+$("quality").onchange=()=>{};
+$("format").onchange();
+
+function fmtInfo(){
+ const fmt=$("format").value; // "jpeg" or "png"
+ const mime=fmt==="jpeg"?"image/jpeg":"image/png";
+ const ext=fmt==="jpeg"?"jpg":"png";
+ const q=Math.max(0.5,Math.min(1,(Number($("quality").value)||92)/100));
+ return {mime,ext,q};
+}
+function toDataURL(c){
+ const {mime,q}=fmtInfo();
+ // JPEG has no alpha channel; flatten onto white first so transparent edges don't turn black.
+ if(mime==="image/jpeg"){
+  const flat=document.createElement("canvas");flat.width=c.width;flat.height=c.height;
+  const fctx=flat.getContext("2d");fctx.fillStyle="#fff";fctx.fillRect(0,0,flat.width,flat.height);fctx.drawImage(c,0,0);
+  return flat.toDataURL(mime,q);
+ }
+ return c.toDataURL(mime);
+}
+function downloadCanvas(c,name){
+ const {ext}=fmtInfo();
+ const a=document.createElement("a");a.href=toDataURL(c);a.download=name.replace(/\.\w+$/,"."+ext);a.click();
+}
+$("zip").onclick=async()=>{
+ if(!jszip){alert("ZIP library not loaded.");return}
+ const {ext}=fmtInfo();
+ const z=new jszip();
+ detected.forEach((r,i)=>z.file("ID-Card-"+(i+1)+"."+ext,toDataURL(cropRect(r)).split(",")[1],{base64:true}));
+ const blob=await z.generateAsync({type:"blob"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download="ID-Cards-Cropped.zip";a.click();
+};
+$("print").onclick=()=>{
+ const canvases=detected.map(cropRect),w=window.open("","_blank");
+ if(!w){alert("Allow pop-ups to print.");return}
+ w.document.write('<html><head><title>ID Cards</title><style>@page{size:A4;margin:10mm}body{margin:0;text-align:center}img{max-width:100%;max-height:80mm;margin:5mm auto;display:block;page-break-inside:avoid}</style></head><body>');
+ canvases.forEach(c=>w.document.write('<img src="'+toDataURL(c)+'">'));
+ w.document.write('</body></html>');w.document.close();setTimeout(()=>w.print(),500);
+};
+function printCanvas(c,n){
+ const w=window.open("","_blank");if(!w)return;
+ const mode=$("size").value;
+ let css=mode==="pvc"?"width:85.6mm;height:53.98mm;object-fit:contain;":"max-width:100%;max-height:90mm;object-fit:contain;";
+ w.document.write('<html><head><title>ID Card '+n+'</title><style>@page{size:A4;margin:10mm}body{text-align:center;margin:20mm}img{'+css+'}</style></head><body><img src="'+toDataURL(c)+'"></body></html>');
+ w.document.close();setTimeout(()=>w.print(),400);
+}
+
+/* Manual crop: click-drag on original preview. */
+$("manual").onclick=()=>{
+ if(!sourceCanvas)return;
+ manualMode=true;status("Manual Crop: drag a rectangle around the ID card on the image.");
+ const old=sourceCanvas;
+ const overlay=document.createElement("canvas");overlay.width=old.width;overlay.height=old.height;overlay.style.width="100%";overlay.style.cursor="crosshair";
+ const ctx=overlay.getContext("2d");ctx.drawImage(old,0,0);
+ $("sourceBox").innerHTML="";$("sourceBox").appendChild(overlay);
+ let sx=0,sy=0,drag=false;
+ overlay.onpointerdown=e=>{const p=pos(e,overlay);sx=p.x;sy=p.y;drag=true};
+ overlay.onpointermove=e=>{if(!drag)return;const p=pos(e,overlay);ctx.drawImage(old,0,0);ctx.strokeStyle="#ef4444";ctx.lineWidth=5;ctx.strokeRect(sx,sy,p.x-sx,p.y-sy)};
+ overlay.onpointerup=e=>{
+  if(!drag)return;drag=false;const p=pos(e,overlay);let x=Math.min(sx,p.x),y=Math.min(sy,p.y),w=Math.abs(p.x-sx),h=Math.abs(p.y-sy);
+  if(w<30||h<20){ctx.drawImage(old,0,0);return}
+  detected=[{x,y,w,h,area:w*h,score:1}];renderCards();drawBoxes();manualMode=false;
+  status("Manual crop added.");
+ };
+};
+function pos(e,c){const r=c.getBoundingClientRect();return{x:(e.clientX-r.left)*c.width/r.width,y:(e.clientY-r.top)*c.height/r.height}}
+
+</script>
+</body>
+</html>
